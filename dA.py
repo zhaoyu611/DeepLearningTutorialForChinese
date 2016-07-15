@@ -82,8 +82,8 @@ class dA(object):
             # 4*sqrt(6./(n_hidden+n_visible))之间，
             # W的类型为thenao.config.floatX，所以代码可以在GPU运行
             initial_W=numpy.asarray(numpy_rng.uniform(
-                        low=-4*sqrt(6./(n_visible+n_hidden)),
-                        high=4*sqrt(6./(n_visible+n_hidden)),
+                        low=-4*numpy.sqrt(6./(n_visible+n_hidden)),
+                        high=4*numpy.sqrt(6./(n_visible+n_hidden)),
                         size=(n_visible,n_hidden)),dtype=theano.config.floatX)
             W=theano.shared(value=initial_W,name='W',borrow=True)
         #定义可见层偏置
@@ -93,8 +93,8 @@ class dA(object):
                               borrow=True)
         #定义隐含层偏置
         if not bhid:
-            bhid=thenao.shared(value=numpy.zeros(n_hidden,
-                                                 dtype=thenao.config.floatX),
+            bhid=theano.shared(value=numpy.zeros(n_hidden,
+                                                 dtype=theano.config.floatX),
                                name='b',
                                borrow=True)
         #定义权重
@@ -173,6 +173,29 @@ def test_dA(learnging_rate=0.1,training_epochs=15,
     #定义符号变量
     index=T.lscalar() #minibatch的索引
     x=T.matrix('x') #输入为栅格化的图像
+
+    #创建输出文件夹,并切换到该目录下
+    if not os.path.isdir(output_folder):
+        os.makedirs(output_folder)
+    os.chdir(output_folder)
+    ####################################
+            # 创建无损输入的模型 #
+    ####################################
+    rng=numpy.random.RandomState(123)
+    theano_rng=RandomStreams(rng.randint(2**30))
+    #实例化dA类
+    da=dA(numpy_rng=rng,theano_rng=theano_rng,input=x,n_visible=28*28,n_hidden=500)
+    #计算cost，updates
+    cost,updates=da.get_cost_updates(corruption_level=0,learnging_rate=learnging_rate)
+    #构造训练函数
+    train_da=theano.function([index],cost,updates=updates,
+                             givens={x:train_set_x[index*batch_size:
+                                                    (index+1)*batch_size]})
+    start_time=time.clock() #对无损模型的训练开始计时
+    ############
+    # 开始训练 #
+    ############
+    for epoch in xrange(training_epochs):
 
 #-----运行主函数---------
 if __name__=='__main__':
