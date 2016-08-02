@@ -182,15 +182,17 @@ def test_dA(learnging_rate=0.1,training_epochs=15,
             # 创建无损输入的模型 #
     ####################################
     rng=numpy.random.RandomState(123)
-    theano_rng=RandomStreams(rng.randint(2**30))d
+    theano_rng=RandomStreams(rng.randint(2**30))
     #实例化dA类
-    da=dA(numpy_rng=rng,theano_rng=theano_rng,input=x,n_visible=28*28,n_hidden=500)
+    da=dA(numpy_rng=rng,theano_rng=theano_rng,input=x,
+          n_visible=28*28,n_hidden=500)
     #计算cost，updates
-    cost,updates=da.get_cost_updates(corruption_level=0,learnging_rate=learnging_rate)
+    cost,updates=da.get_cost_updates(corruption_level=0.,
+                                     learnging_rate=learnging_rate)
     #构造训练函数
     train_da=theano.function([index],cost,updates=updates,
-                             givens={x:train_set_x[index*batch_size:
-                                                    (index+1)*batch_size]})
+            givens={x:train_set_x[index*batch_size:
+                                    (index+1)*batch_size]})
     start_time=time.clock() #对无损模型的训练开始计时
     ############
     # 开始训练 #
@@ -204,9 +206,9 @@ def test_dA(learnging_rate=0.1,training_epochs=15,
     end_time=time.clock()
     training_time=(end_time-start_time)
 
-    print >>sys.stderr,('The no corruption code for file'+
+    print >>sys.stderr,('The no corruption code for file '+
                         os.path.split(__file__)[1]+
-                        'ran for %.2fm')%(training_time/60.)
+                        ' ran for %.2fm')%(training_time/60.)
     image=PIL.Image.fromarray(
         tile_raster_images(X=da.W.get_value(borrow=True).T,
                            img_shape=(28,28),tile_shape=(10,10),
@@ -221,10 +223,11 @@ def test_dA(learnging_rate=0.1,training_epochs=15,
     da=dA(numpy_rng=rng,theano_rng=theano_rng,input=x,
           n_visible=28*28,n_hidden=500)
     #计算代价和更新列表
-    cost,updates=da.get_cost_updates(corruption_level=0.3,learnging_rate=learnging_rate)
+    cost,updates=da.get_cost_updates(corruption_level=0.3,
+                                     learnging_rate=learnging_rate)
     #构造训练函数
     train_da=theano.function([index],cost,updates=updates,
-                             givens={x:train_set_x[index*batch_size:(index+1)*batch_size]})
+            givens={x:train_set_x[index*batch_size:(index+1)*batch_size]})
     #开始计时
     start_time=time.clock()
     ############
@@ -237,12 +240,13 @@ def test_dA(learnging_rate=0.1,training_epochs=15,
         for batch_index in xrange(n_train_batches):
             c.append(train_da(batch_index))
 
-        print "Training epoch %d,cost "%epoch,numpy.mean(c)
+        print "Training epoch %d,cost " % epoch,numpy.mean(c)
     end_time=time.clock()
     training_time=end_time-start_time
-    print >> sys.stderr, ("the 30% corruption code for file"+os.path.split(__file__)[1]+
-                          "ran for %.2fm" %(training_time/60.))
-    img=PIL.Image.fromarray(tile_raster_images(
+    print >> sys.stderr, ("the 30% corruption code for file "+
+                          os.path.split(__file__)[1]+
+                          " ran for %.2fm" %(training_time/60.))
+    image=PIL.Image.fromarray(tile_raster_images(
         X=da.W.get_value(borrow=True).T,
         img_shape=(28,28),tile_shape=(10,10),tile_spacing=(1,1)))
     image.save('filters_corruption_30.png')
