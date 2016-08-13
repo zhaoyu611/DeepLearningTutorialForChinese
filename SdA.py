@@ -220,16 +220,16 @@ class SdA(object):
                                  name='train')
         test_score_i=theano.function([index],self.errors,
                                      givens={
-                                         self.x:train_set_x[index*batch_size:
+                                         self.x:test_set_x[index*batch_size:
                                                          (index+1)*batch_size],
-                                         self.y:train_set_y[index*batch_size:
+                                         self.y:test_set_y[index*batch_size:
                                                         (index+1)*batch_size]},
                                      name='test')
         valid_score_i=theano.function([index],self.errors,
                                       givens={
-                                          self.x:train_set_x[index*batch_size:
+                                          self.x:valid_set_x[index*batch_size:
                                                             (index+1)*batch_size],
-                                          self.y:train_set_y[index*batch_size:
+                                          self.y:valid_set_y[index*batch_size:
                                                             (index+1)*batch_size]},
                                       name='valid')
         #创建函数遍历整个验证集合
@@ -238,7 +238,7 @@ class SdA(object):
         #创建函数遍历整个测试集合
         def test_score():
             return [test_score_i(i) for i in xrange(n_test_batches)]
-        return train_fn,valid_score(),test_score()
+        return train_fn, valid_score, test_score
 
 def test_SdA(finetune_lr=0.1,pretraining_epochs=15,
              pretrain_lr=0.001,training_epochs=1000,
