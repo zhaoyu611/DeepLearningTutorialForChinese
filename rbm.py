@@ -59,8 +59,8 @@ class RBM(object):
         #asarray转换到theano.config.floatX，那么程序可以在GPU运行
         if W is None:
             initial_W=numpy.asarray(numpy_rng.uniform(
-                    low=-4*numpy.sqrt(n_hidden+n_visible),
-                    high=4*numpy.sqrt(n_hidden+n_visible),
+                    low=-4*numpy.sqrt(6./(n_hidden+n_visible)),
+                    high=4*numpy.sqrt(6./(n_hidden+n_visible)),
                     size=(n_visible,n_hidden)),
                     dtype=theano.config.floatX)
             #theano共享权重和偏置
@@ -73,9 +73,9 @@ class RBM(object):
                                 name='hbias',borrow=True)
         #创建可见单元偏置的共享变量
         if vbias is None:
-            vbias=theano.shared(value=numpy.zeros(n_hidden,
+            vbias=theano.shared(value=numpy.zeros(n_visible,
                                                   dtype=theano.config.floatX),
-                                name='hbias',borrow=True)
+                                name='vbias',borrow=True)
         #初始化标准RBM的输入层或DBN的layer0
         self.input=input
         if not input:
@@ -251,8 +251,10 @@ class RBM(object):
         #相当于做运算：xi[:,bit_i_idx]
         #设定所有值在xi_flip运算，而不是xi上运算
         xi_flip=T.set_subtensor(xi[:,bit_i_idx],1-xi[:,bit_i_idx])
+        #计算xi_flip的自由能
+        fe_xi_flip=self.free_energy(xi_flip)
         #等价运算：e^(-FE(x_i)) / (e^(-FE(x_i)) + e^(-FE(x_{\i})))
-        cost=T.mean(self.n_visible*T.log(T.nnet.sigmoid(xi_flip-fe_xi)))
+        cost=T.mean(self.n_visible*T.log(T.nnet.sigmoid(fe_xi_flip-fe_xi)))
         #将bit_i_idx%number增加到updates中，随机选取下次的索引
         updates[bit_i_idx]=(bit_i_idx+1)%self.n_visible
         return cost
@@ -276,7 +278,7 @@ class RBM(object):
 
 def test_rbm(learning_rate=0.1,training_epochs=15,
              dataset='./data/mnist.pkl.gz',batch_size=20,
-             n_chains=20,n_samples=10,out_folder='rbm_plots',
+             n_chains=20,n_samples=10,output_folder='rbm_plots',
              n_hidden=500):
     """
     使用Theano训练和采样的函数,测试集合：MNIST
@@ -286,7 +288,7 @@ def test_rbm(learning_rate=0.1,training_epochs=15,
     :param batch_size: 训练RBM的块大小
     :param n_chains: 用于采样的并行Gibbs链数
     :param n_samples: 每条链中需要画出的样本数
-    :param out_folder: 输出图的保存路径
+    :param output_folder: 输出图的保存路径
     :param n_hidden: 隐层单元数量
     """
     datasets=load_data(dataset)
@@ -316,10 +318,10 @@ def test_rbm(learning_rate=0.1,training_epochs=15,
     #          RBM的训练过程         #
     #################################
 
-    #设置输出文件的路径
-    if not os.path.isdir(out_folder):
-        os.makedirs(out_folder)
-    os.chdir(out_folder)
+    # #设置输出文件的路径
+    if not os.path.isdir(output_folder):
+        os.makedirs(output_folder)
+    os.chdir(output_folder)
 
     #theano函数可以没有输出量，train_rbm实现RBM参数更新的功能
     train_rbm=theano.function([index],cost,updates=updates,
@@ -341,7 +343,7 @@ def test_rbm(learning_rate=0.1,training_epochs=15,
         plotting_start=time.clock()
         #画出权重矩阵的可视图
         image=PIL.Image.fromarray(tile_raster_images(
-            X=rbm.W.get_vale(borrow=True).T,
+            X=rbm.W.get_value(borrow=True).T,
             img_shape=(28,28),tile_shape=(10,10),
             tile_spacing=(1,1)))
         image.save('filters_at_epoch_%i.png'%epoch)
@@ -360,8 +362,8 @@ def test_rbm(learning_rate=0.1,training_epochs=15,
     #随机选择用于初始化固定链的测试样本
     test_idx=rng.randint(number_of_test_samples-n_chains)
     persistent_vis_chain=theano.shared(numpy.asarray(
-                test_set_x.get_value(borrow=True)[test_idx:test_idx+n_chains]),
-                dtype=theano.config.floatX)
+                test_set_x.get_value(borrow=True)[test_idx:test_idx+n_chains],
+                dtype=theano.config.floatX))
 
     plot_every=1000
     #定义一步Gibbs采样(mf=mean-field) 中，每隔plot_every步才进行一次作图
@@ -387,7 +389,7 @@ def test_rbm(learning_rate=0.1,training_epochs=15,
             tile_spacing=(1,1))
         # 重构图像
     image=PIL.Image.fromarray(image_data)
-    image.save('sample.png')
+    image.save('samples.png')
     os.chdir('../')
 
 
