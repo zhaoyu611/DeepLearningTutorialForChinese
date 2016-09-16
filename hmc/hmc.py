@@ -2,7 +2,7 @@
 
 import numpy
 from theano import function ,shared
-from thenao import tensor as TT
+from theano import tensor as TT
 import theano
 
 sharedX=lambda X, name : \
