@@ -272,8 +272,7 @@ class RBM(object):
         的办法是输出未sigmoid的值，在scan之外同时应用log和sigmoid。
         """
         cross_entropy=T.mean(T.sum(self.input*T.log(T.nnet.sigmoid(pre_sigmoid_nv))+
-                                   (1-self.input)*T.log(1-T.nnet.sigmoid(pre_sigmoid_nv))),axis=1)
-
+                                   (1-self.input)*T.log(1-T.nnet.sigmoid(pre_sigmoid_nv)),axis=1))
         return cross_entropy
 
 def test_rbm(learning_rate=0.1,training_epochs=15,
